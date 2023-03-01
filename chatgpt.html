@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"> 
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<!-- 新 Bootstrap4 核心 CSS 文件 -->
+	<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+	<!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+	<script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+	<!-- bootstrap.bundle.min.js 用于弹窗、提示、下拉菜单，包含了 popper.min.js -->
+	<script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js"></script>
+	<!-- 最新的 Bootstrap4 核心 JavaScript 文件 -->
+	<script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+	<style type="text/css">
+	.mask{
+		left: 0;
+		top: 0;
+		bottom:0;
+		right:0;
+		position: fixed;
+		z-index: 99999;
+		background: rgba(0,0,0,0.6);
+	}
+	.htmlMask{
+		height: 100%;
+		width: 100%;
+		overflow: hidden;
+	}
+	</style>
+  </head>
+  <body>
+<div class="container">
+  <h2>简单的ChatAI</h2>
+  <div class="jumbotron">
+    <form action="">
+	  <div class="form-group">
+  <label for="key">AI KEY:</label>
+  <input type="password" class="form-control" placeholder="Enter your key" value="sk-" id="key">
+  </div>
+  <div class="form-group">
+  <label for="question">Input question:</label>
+  <textarea  class="form-control" placeholder="Enter question" id="question" style="min-height:100px;"></textarea>
+  </div>
+  <div class="form-group">
+ <label for="pwd">Output answer:</label>
+	<textarea readonly class="form-control" placeholder="" id="answer" style="min-height:300px;"></textarea>
+		 <div class="form-group" style="text-align:right;margin-top:5px">
+		 <div class="btn-group btn-group-lg">
+			<button type="button" class="btn btn-warning" onclick="stopRead()">暂停</button>
+			<button type="button" class="btn btn-info" onclick="reRead()">播放</button>
+		</div>
+		  </div>
+  </div>
+  <div class="form-group" style="text-align:center;">
+  <button style="width:90%" type="button" onclick="doOk()" class="btn btn-primary">Submit</button>
+  </div>
+</form>
+  </div>
+</div>
+<script >
+var player;
+function doOk(){
+	let key = $("#key").val().trim();
+	let question = $("#question").val().trim();
+	if(question==""){
+	   alert("请输入您的问题");
+	   return;
+	}
+	if(key==""){
+	   alert("缺少AI KEY");
+	   return;
+	}
+	createMask();
+	$.ajax({
+		url:"https://api.openai.com/v1/completions",
+		type:"POST",
+		headers:{
+			"Authorization":"Bearer "+key,
+			"Content-Type":"application/json"
+		},
+		dataType: 'json',
+		data:JSON.stringify({
+			prompt:question,
+			max_tokens:2048,
+			model:"text-davinci-003"
+		}),
+		success:function(res){
+			deleteMask();
+			console.log(res);
+			if(res.choices!=null&&res.choices.length>0){
+				$("#answer").val(question+" \n "+res.choices[0].text);
+				$("#question").val("");
+				stopRead();
+				doRead();
+			}
+		},
+		error:function(e){
+			deleteMask();
+			alert(e.responseJSON.error.message);
+		}
+	});
+}
+function doRead(){
+	let answer = $("#answer").val().trim();
+	if(answer!=""){
+		//let mp3Url="https://fanyi.sogou.com/reventondc/synthesis?speed=1&lang=zh-CHS&from=translateweb&speaker=5&text="+answer;
+		let mp3Url="https://tts.baidu.com/text2audio?cuid=baike&lan=ZH&ctp=1&pdt=301&vol=9&rate=32&speaker=5003&tex="+answer;
+		player = new Audio(mp3Url);
+		player.play();
+	}
+}
+function reRead(){
+	if(player!=null){
+		player.play();
+	}
+}
+function stopRead(){
+	if(player!=null){
+		player.pause();
+	}
+}
+function deleteMask (){
+	let  mask ;
+    if( mask = document.getElementById("mask")){
+        mask.removeEventListener("click", deleteMask );
+        mask.parentNode.removeChild( mask );
+        document.documentElement.classList.remove("htmlMask");
+    }
+}
+function createMask (){
+	if( document.getElementById("mask")){
+        return true;
+    }
+    let  mask = document.createElement("div");
+        mask.id = "mask";
+        mask.className = "mask";
+    document.body.appendChild( mask );
+    document.documentElement.classList.add("htmlMask");
+}
+</script >
+  </body>
+</html>
